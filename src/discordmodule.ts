@@ -23,10 +23,13 @@ export class Discordserver {
 				this.user = this.users[0]
 			this.window.webContents.send("updateView")
 		})
-		this.Client.on("voiceStateUpdate", () => {
+		this.Client.on("voiceStateUpdate", (olduser, newuser) => {
 			this.users = this.Client.guilds.find(g => g.id == this._id).members.filter(m => !m.user.bot).filter(m => m.voiceChannelID != null).array()
 			if (this.user == null)
 				this.user = this.users[0]
+			if (this.connection)
+				if (olduser.voiceChannel == this.connection.channel && newuser.voiceChannel != this.connection.channel)
+					this.stop();
 			this.window.webContents.send("updateView")
 		})
 		this.playfile = this.playfile.bind(this)
@@ -35,6 +38,7 @@ export class Discordserver {
 	get user_id(): string {
 		if (this.user instanceof Discord.GuildMember)
 			return this.user.id
+		console.log("user_id was empty band returned empty string");
 		return ""
 	}
 	get server_id(): string {
@@ -67,9 +71,9 @@ export class Discordserver {
 	}
 	stop() {
 		if (this.connection && this.connection.dispatcher) {
-			try{
+			try {
 				this.connection.dispatcher.end()
-			}catch(e){
+			} catch (e) {
 				console.log(e)
 			}
 		}
@@ -117,12 +121,12 @@ export class Discordserver {
 		}
 	}
 	playfile(connection: Discord.VoiceConnection, path: string) {
-		if(!(this instanceof Discordserver))
+		if (!(this instanceof Discordserver))
 			console.log(this)
 		const dispatcher = connection.playFile(path, { volume: 0.25 })
 		dispatcher.on("end", () => {
-			if(this&&this.connectiontimeout)
-			clearTimeout(this.connectiontimeout)
+			if (this && this.connectiontimeout)
+				clearTimeout(this.connectiontimeout)
 			this.connectiontimeout = setTimeout(() => this.leave(), 10000)
 		})
 		dispatcher.on("error", () => {
@@ -133,8 +137,8 @@ export class Discordserver {
 		let stream = youtubeStream("https://www.youtube.com/watch?v=" + path)
 		const dispatcher = connection.playStream(stream, { volume: 0.25 })
 		dispatcher.on("end", () => {
-			if(this&&this.connectiontimeout)
-			clearTimeout(this.connectiontimeout)
+			if (this && this.connectiontimeout)
+				clearTimeout(this.connectiontimeout)
 			this.connectiontimeout = setTimeout(() => this.leave(), 10000)
 		})
 		dispatcher.on("error", () => {
