@@ -1,6 +1,5 @@
 import * as React from 'react';
-
-export class VolumeSlider extends React.Component<undefined, undefined> {
+export class VolumeSlider extends React.Component<{initialvolume:number,updateVolume:any}, {}> {
 	indicatorstyle: any;
 	_lock: boolean;
 	_charging: boolean;
@@ -11,7 +10,6 @@ export class VolumeSlider extends React.Component<undefined, undefined> {
 	updateVolume:any;
 	constructor(props) {
 		super(props);
-		console.log(props);
 		this._lock = false;
 		this._charging = false;
 		this._charge = 0;

@@ -6,7 +6,7 @@ body{
 #volume-slider{
   align-items: center;
   display    : flex;
-  margin     : 1em auto;
+  margin     : 0 auto;
   padding    : 10px 0;
   width      : 265px;
 }
@@ -56,4 +56,15 @@ body{
   top             : -4px;
   transition      : visibility 100ms, opacity 100ms;
   width           : 12px;
+}
+.mdl-list__item{
+  padding: 0;
+  min-height: 32px;
+}
+.mdl-textfield {
+  padding: 0;
+}
+html,body{
+  margin:0;
+  padding:0;
 }
