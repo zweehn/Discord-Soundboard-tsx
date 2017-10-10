@@ -14,9 +14,15 @@ const styles = theme => ({
   },
 });
 
+interface IUserselect{
+	anchorEl: HTMLElement|undefined,
+	open: boolean,
+	selectedIndex: number
+}
+
 export default class SimpleListMenu extends React.Component<{options:Discord.GuildMember[],onchange:(newindex:Discord.GuildMember)=>void},{}> {
   state = {
-    anchorEl: null,
+    anchorEl: undefined,
     open: false,
     selectedIndex: 0,
   };
@@ -51,7 +57,7 @@ export default class SimpleListMenu extends React.Component<{options:Discord.Gui
           >
             <ListItemText
               primary="Selected Listener"
-              secondary={this.props.options[this.state.selectedIndex].displayName.toString()}
+              secondary={this.props.options[this.state.selectedIndex]?this.props.options[this.state.selectedIndex].displayName.toString():"None"}
             />
           </ListItem>
         </List>

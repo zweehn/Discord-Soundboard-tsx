@@ -8,7 +8,8 @@
     background-color: #fff;
     background-clip: padding-box;
     border: 1px solid rgba(0,0,0,.15);
-    border-radius: .25rem;
+    font-family: "Roboto";
+    border-radius: 2px;
     outline: none;
     opacity: 0;
     pointer-events: none;
