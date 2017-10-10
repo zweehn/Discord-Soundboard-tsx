@@ -30,7 +30,6 @@ const theme = createMuiTheme({
 		primary: indigo, // indigo and orange play nicely together.
 		secondary: {
 			...orange,
-			A400: '#00e677',
 		},
 		error: red,
 	},
@@ -56,7 +55,7 @@ export class App extends React.Component<undefined, undefined> {
 		try {
 			fs.readJsonSync("./config/savedfiles.json").forEach((p: string) => {
 				if (fs.existsSync(p))
-					soundfiles.push({ name: path.basename(p), path: p })
+					soundfiles.push({ name: path.basename(p).replace(/\..*$/,""), path: p })
 			})
 		} catch (e) {
 			fs.writeJSONSync("./config/savedfiles.json", {})
@@ -105,18 +104,18 @@ export class App extends React.Component<undefined, undefined> {
 	render() {
 		return (
 			<MuiThemeProvider theme={theme}>
-				<div>
+				<div style={{backgroundColor:theme.palette.background.paper}}>
 					<AppBar position="static">
 						<Toolbar>
 							<Typography type="title" color="inherit">
-								Title
+								Discord Soundboard
           					</Typography>
 						</Toolbar>
 					</AppBar>
 					<ServerSelection onchange={(newServer) => server.server = newServer} options={server.servers} />
 					<UserSelection onchange={(newPlayer) => server.user = newPlayer} options={server.users} />
 					<VolumeSlider initialvolume={server.volume * 100} updateVolume={this.onchangevolume}></VolumeSlider>
-					<div style={{ overflowX: "auto" }}>
+					<div style={{ overflowX: "auto",height:"calc(100vh - 350px)" }}>
 						<List>
 							{soundfiles.map((item, i) => (
 								<ListItem
@@ -124,12 +123,12 @@ export class App extends React.Component<undefined, undefined> {
 									button
 									dense
 									data-index={i}
-									onClick={() => server.connectandPlayFile(item.path)}>
+									onClick={() => server.connectandPlayFile(item.path)}
+									style={{display:"inline-block"}}>
 									<ContextMenuTrigger
 										id="Sounds"
 										holdToDisplay={1000}
-										attributes={{ style: { display: "flex", alignItems: "center", fontFamily: "Roboto" } }}
-									>
+										attributes={{ style: { display: "flex", alignItems: "center", fontFamily: "Roboto" } }}>
 										<PlayCircle color={theme.palette.secondary.A700.toString()} />
 										<span>{item.name}</span>
 									</ContextMenuTrigger>
@@ -140,7 +139,7 @@ export class App extends React.Component<undefined, undefined> {
 							</ContextMenu>
 						</List>
 					</div>
-					<div style={{ position: "fixed", bottom: 0, background: "rgb(249, 249, 249)" }}>
+					<div style={{ position: "fixed", bottom: 0, background: theme.palette.background.paper, width: "100%" }}>
 						<TextField
 							id="youtubeLink"
 							label="Video Link"
