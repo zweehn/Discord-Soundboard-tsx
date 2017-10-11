@@ -85,7 +85,7 @@ export class App extends React.Component<undefined, undefined> {
 		})
 	}
 	addFile(name: string, path: string) {
-		soundfiles.push({ name: name, path: path })
+		soundfiles.push({ name: name.replace(/\..*$/,""), path: path })
 		this.forceUpdate()
 		this.saveSounds()
 	}
