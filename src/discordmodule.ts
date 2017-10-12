@@ -57,6 +57,17 @@ export class Discordserver {
 				that.connectandPlayYoutube(message.content);
 			}
 		})
+		this.Client.on("voiceStateUpdate", (olduser, newuser) => {
+			this.users = this.Client.guilds.find(g => g.id == this._id).members.filter(m => !m.user.bot).filter(m => m.voiceChannelID != null).array()
+			if (this.user == null)
+				this.user = this.users[0]
+			if (this.connection)
+				if (olduser.voiceChannel == this.connection.channel && newuser.voiceChannel != this.connection.channel)
+					this.stop();
+			this.window.webContents.send("updateView")
+		})
+		this.playfile = this.playfile.bind(this)
+		this.playyoutube = this.playyoutube.bind(this)
 	}
 	get user_id(): string {
 		if (this.user instanceof Discord.GuildMember)
