@@ -22,9 +22,9 @@ const createWindow = async () => {
     autoHideMenuBar: true,
   });
   let server = new Discordserver(mainWindow);
-  await server.login().catch((reason:Error) => {
-    console.log(reason.message)
-    if(mainWindow)
+  await server.login().catch((reason: Error) => {
+    console.log(reason)
+    if (mainWindow)
       mainWindow.close()
   })
   mainWindow.server = server;
@@ -36,7 +36,7 @@ const createWindow = async () => {
     if (isDevMode) {
     await installExtension(REACT_DEVELOPER_TOOLS);
     mainWindow.webContents.openDevTools();
-    }*/
+  }*/
 
   // Emitted when the window is closed.
   mainWindow.on('closed', () => {
@@ -61,14 +61,9 @@ const openTokenWindow = async () => {
   // and load the index.html of the app.
   tokenWindow.loadURL(`file://${__dirname}/missingtoken.html`);
 
-  // Open the DevTools.
-  if (isDevMode) {
-    await installExtension(REACT_DEVELOPER_TOOLS);
-    tokenWindow.webContents.openDevTools();
-  }
 
   // Emitted when the window is closed.
-  tokenWindow.on('closed', () => {
+  tokenWindow.on('close', () => {
     if (fs.readJSONSync("./config/config.json").token != "") {
       console.log("Creating window?")
       createWindow();

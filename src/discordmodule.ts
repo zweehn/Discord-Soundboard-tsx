@@ -89,7 +89,7 @@ export class Discordserver {
 		console.log(this._volume);
 	}
 	async login() {
-		let token = fs.readJsonSync("./config/config.json").token
+		let token = (await fs.readJson("./config/config.json")).token as string
 		await this.Client.login(token)
 		console.info("Succesful discord login")
 	}
