@@ -11,12 +11,17 @@ export class Discordserver {
 	public users: Discord.GuildMember[] = []
 	private connection?: Discord.VoiceConnection
 	private connectiontimeout: NodeJS.Timer
+	public nowPlaying:string
+	public pause:()=>void=()=>{};
+	public play:()=>void=()=>{};
+	public isPaused: boolean = true;
 	constructor(window: Electron.BrowserWindow) {
 		let that = this;
 		this.window = window
 		this.connect = this.connect.bind(this)
 		this.playfile = this.playfile.bind(this)
 		this.playyoutube = this.playyoutube.bind(this)
+		this.nowPlaying = ""
 		this.connectandPlayYoutube = this.connectandPlayYoutube.bind(this)
 		this.connectandPlayFile = this.connectandPlayFile.bind(this)
 		that.Client.on("ready", () => {
@@ -85,19 +90,25 @@ export class Discordserver {
 			this.connection.dispatcher.end("from this.stop")
 		}
 	}
+	ended(connection:Discord.VoiceConnection){
+		this.nowPlaying="";
+		this.window.webContents.send("updateView")
+		clearTimeout(this.connectiontimeout)
+		this.connectiontimeout = setTimeout(() => this.leave(connection), 10000)
+	}
 	leave(connection: Discord.VoiceConnection) {
 		connection.channel.leave()
 		this.connection = undefined
 	}
-	connectandPlayFile(path: string) {
+	connectandPlayFile(path: string, name:string) {
 		this.stop()
-		this.connect(path, this.playfile)
+		this.connect(path, this.playfile, name)
 	}
 	connectandPlayYoutube(path: string) {
 		this.stop()
 		this.connect(path, this.playyoutube)
 	}
-	private connect(path: string, player: (connection: Discord.VoiceConnection, path: string) => void) {
+	private connect(path: string, player: (connection: Discord.VoiceConnection, path: string, name?: string) => void, name?: string) {
 		if (this.isReady) {
 			let member = this.Client.guilds.find(g => g.id == this._id).members.find(m => m.user.id == this.user_id)
 			if (member != null && member.voiceChannel != null) {
@@ -106,13 +117,13 @@ export class Discordserver {
 					if (this.connection.channel == voiceChannel) {
 						this.stop()
 						clearTimeout(this.connectiontimeout)
-						player(this.connection, path)
+						player(this.connection, path, name)
 					}
 				}
 				else {
 					voiceChannel.join().then(connection => {
 						this.connection = connection
-						player(connection, path)
+						player(connection, path, name)
 					}).catch(err => console.error(err))
 				}
 			} else {
@@ -120,31 +131,43 @@ export class Discordserver {
 			}
 		}
 	}
-	private playfile(connection: Discord.VoiceConnection, path: string) {
-		console.log("playfile")
+	private playfile(connection: Discord.VoiceConnection, path: string, name?: string) {
+		if(name === undefined)
+			return
+		console.log(name)
+		this.nowPlaying=name
+		this.isPaused = false;
+		this.window.webContents.send("updateView")
 		const dispatcher = connection.playFile(path, { volume: this.volume })
-		dispatcher.on("end", (reason) => {
-			console.log(reason+" end")
-			clearTimeout(this.connectiontimeout)
-			this.connectiontimeout = setTimeout(() => this.leave(connection), 10000)
-		})
-		dispatcher.on("error", () => {
-			this.stop()
-		})
-	}
-	private playyoutube(connection: Discord.VoiceConnection, path: string) {
-		console.log("playyoutube "+path)
-		//yt(path, { filter: "audioonly" }).on("data",d=>console.log(d));
-		const dispatcher = connection.playStream(yt(path, { filter: "audioonly" }), { volume: this.volume })
-		console.log(this instanceof Discordserver)
-		dispatcher.on("end", reason => {
-			console.log(reason+" end")
+		this.pause = ()=>{this.isPaused = true;this.window.webContents.send("updateView");dispatcher.pause()}
+		this.play = ()=>{this.isPaused = false;this.window.webContents.send("updateView");dispatcher.resume()}
+		dispatcher.resume()
+		dispatcher.on("end", () => {
+			this.ended(connection)
 			clearTimeout(this.connectiontimeout)
 			this.connectiontimeout = setTimeout(() => this.leave(connection), 10000)
 		})
 		dispatcher.on("error", (e) => {
-			console.trace(e)
-			console.log("error")
+			console.error(e)
+			this.stop()
+		})
+	}
+	private playyoutube(connection: Discord.VoiceConnection, path: string) {
+		//yt(path, { filter: "audioonly" }).on("data",d=>console.log(d));
+		this.isPaused = false;
+		yt.getInfo(path).then((i)=>{
+			this.nowPlaying=i.title
+			this.window.webContents.send("updateView")
+		});
+		const dispatcher = connection.playStream(yt(path, { filter: "audioonly" }), { volume: this.volume })
+		this.pause = ()=>{this.isPaused = true;this.window.webContents.send("updateView");dispatcher.pause()}
+		this.play = ()=>{this.isPaused = false;this.window.webContents.send("updateView");dispatcher.resume()}
+		dispatcher.resume()
+		dispatcher.on("end", () => {
+			this.ended(connection)
+		})
+		dispatcher.on("error", (e) => {
+			console.error(e)
 			this.stop()
 		})
 	}
