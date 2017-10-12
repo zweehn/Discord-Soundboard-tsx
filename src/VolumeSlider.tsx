@@ -1,6 +1,5 @@
 import * as React from 'react';
-
-export class VolumeSlider extends React.Component<undefined, undefined> {
+export class VolumeSlider extends React.Component<{initialvolume:number,updateVolume:any}, {}> {
 	indicatorstyle: any;
 	_lock: boolean;
 	_charging: boolean;
@@ -11,7 +10,6 @@ export class VolumeSlider extends React.Component<undefined, undefined> {
 	updateVolume:any;
 	constructor(props) {
 		super(props);
-		console.log(props);
 		this._lock = false;
 		this._charging = false;
 		this._charge = 0;
@@ -201,8 +199,8 @@ export class VolumeSlider extends React.Component<undefined, undefined> {
 						</mask>
 
 						<linearGradient id="grad-1" x1="0" x2="1" y1="0" y2="0">
-							<stop offset="20%" stopColor="#9a88aa" />
-							<stop offset="100%" stopColor="#6e33a5" />
+							<stop offset="20%" stopColor="#f57c00" />
+							<stop offset="100%" stopColor="#f57c00" />
 						</linearGradient>
 					</defs>
 

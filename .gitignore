@@ -1,14 +1,14 @@
+
+/out
+/config
+yarn.lock
+
 # See http://help.github.com/ignore-files/ for more about ignoring files.
 
 # compiled output
 /build
 /tmp
 /out-tsc
-/**/*.js
-/**/*.map
-
-!/**/lib/*.js
-!/frontend/sw.js
 
 # dependencies
 /node_modules
@@ -49,5 +49,4 @@ Thumbs.db
 
 # for docker
 /data
-
 

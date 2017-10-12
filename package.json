@@ -48,27 +48,29 @@
   },
   "dependencies": {
     "@types/fs-extra": "^4.0.1",
-    "@types/react": "^0.14.55",
-    "@types/react-dom": "^0.14.20",
+    "@types/react": "^16.0.10",
+    "@types/react-dom": "^16.0.1",
     "discord.js": "^11.1.0",
     "electron-compile": "^6.4.1",
     "electron-devtools-installer": "^2.0.1",
     "fs-extra": "^4.0.1",
+    "material-ui": "^1.0.0-beta.16",
+    "material-ui-icons": "^1.0.0-beta.15",
+    "materialize-css": "^0.100.2",
     "node-opus": "^0.2.6",
-    "react": "^15.4.1",
+    "react": "^16.0.0",
     "react-contextmenu": "^2.6.5",
-    "react-dom": "^15.4.1",
+    "react-dom": "^16.0.0",
     "react-hot-loader": "^3.0.0-beta.6",
     "tslib": "^1.4.0",
-    "youtube-audio-stream": "0.0.50",
-    "ytdl-core": "^0.17.1"
+    "ytdl-core": "^0.18.0"
   },
   "devDependencies": {
     "babel-plugin-transform-async-to-generator": "^6.24.1",
     "babel-preset-env": "^1.6.0",
     "babel-preset-react": "^6.24.1",
     "electron-forge": "^4.0.0",
-    "electron-prebuilt-compile": "1.7.5",
+    "electron-prebuilt-compile": "1.7.8",
     "tslint": "^5.1.0",
     "typescript": "^2.2.2"
   }

@@ -1,27 +1,61 @@
 import * as Discord from "discord.js"
 import * as fs from "fs-extra"
-var youtubeStream = require('youtube-audio-stream')
-
+import * as yt from "ytdl-core"
 export class Discordserver {
 	Client = new Discord.Client()
 	isReady = false
-	private _id = "170500343895949312"
+	private _id: string
 	private window: Electron.BrowserWindow
 	public user: Discord.GuildMember
 	public servers: Discord.Guild[] = []
 	public users: Discord.GuildMember[] = []
 	private connection?: Discord.VoiceConnection
 	private connectiontimeout: NodeJS.Timer
+	public nowPlaying:string
+	public pause:()=>void=()=>{};
+	public play:()=>void=()=>{};
+	public isPaused: boolean = true;
 	constructor(window: Electron.BrowserWindow) {
+		let that = this;
 		this.window = window
-		this.Client.on("ready", () => {
-			console.log("Ready")
-			this.isReady = true
-			this.servers = this.Client.guilds.array()
-			this.users = this.Client.guilds.find(g => g.id == this._id).members.filter(m => !m.user.bot).filter(m => m.voiceChannelID != null).array()
-			if (this.users[0] != null)
-				this.user = this.users[0]
-			this.window.webContents.send("updateView")
+		this.connect = this.connect.bind(this)
+		this.playfile = this.playfile.bind(this)
+		this.playyoutube = this.playyoutube.bind(this)
+		this.nowPlaying = ""
+		this.connectandPlayYoutube = this.connectandPlayYoutube.bind(this)
+		this.connectandPlayFile = this.connectandPlayFile.bind(this)
+		that.Client.on("ready", () => {
+			console.info("Ready")
+			that.isReady = true
+			that.servers = that.Client.guilds.array()
+			if (that.servers[0] != null)
+				that._id = that.servers[0].id
+			that.users = that.Client.guilds.find(g => g.id == that._id).members.filter(m => !m.user.bot).filter(m => m.voiceChannelID != null).array()
+			if (that.users[0] != null)
+				that.user = that.users[0]
+			that.window.webContents.send("updateView")
+		})
+
+		that.Client.on("voiceStateUpdate", () => {
+			that.users = that.Client.guilds.find(g => g.id == that._id).members.filter(m => !m.user.bot).filter(m => m.voiceChannelID != null).array()
+			if (that.users[0] != null && that.user == null)
+				that.user = that.users[0]
+			that.window.webContents.send("updateView")
+		})
+
+		that.Client.on("message",message=>{
+			let messages = message.content.toLowerCase().split(" ");
+			if(messages[0].toLowerCase() != "botti")
+				return;
+			if(messages[1] == "halts"){
+				if(messages[2] == "maul"){
+					that.stop();
+				}
+			}
+			if(messages[1] == "spiel"){
+				that.user = message.member;
+				that.connectandPlayYoutube(message.content);
+			}
 		})
 		this.Client.on("voiceStateUpdate", (olduser, newuser) => {
 			this.users = this.Client.guilds.find(g => g.id == this._id).members.filter(m => !m.user.bot).filter(m => m.voiceChannelID != null).array()
@@ -38,110 +72,113 @@ export class Discordserver {
 	get user_id(): string {
 		if (this.user instanceof Discord.GuildMember)
 			return this.user.id
-		console.log("user_id was empty band returned empty string");
 		return ""
 	}
-	get server_id(): string {
-		return this._id
+	set server(newServer:Discord.Guild){
+		this._id=newServer.id
 	}
-	set server_id(id: string) {
-		this.stop()
-		this._id = id
-		this.users = this.Client.guilds.find(g => g.id == this._id).members.filter(m => m.voiceChannelID != null).array()
-		this.window.webContents.send("updateView")
+	private _volume = 0.1
+	get volume() {
+		return Math.sqrt(this._volume)
 	}
-	get volume(): number {
-		if (this.connection && this.connection.dispatcher)
-			return this.connection.dispatcher.volume * 200
-		return 0
-	}
-	set volume(volume: number) {
-		if (this.connection && this.connection.dispatcher)
-			this.connection.dispatcher.setVolume(volume / 200)
-		this.window.webContents.send("updateView")
+	set volume(newVolume: number) {
+		this._volume = Math.pow(newVolume,2);
+		if (this.connection && this.connection.dispatcher) {
+			this.connection.dispatcher.setVolume(this._volume);
+		}
+		console.log(this._volume);
 	}
 	async login() {
 		let token = fs.readJsonSync("./config/config.json").token
-		await this.Client.login(token).catch((reason: any) => {
-			console.log(reason)
-		})
+		await this.Client.login(token)
+		console.info("Succesful discord login")
 	}
 	destroy() {
 		this.Client.destroy().then(() => console.log("destroyed"))
 	}
 	stop() {
 		if (this.connection && this.connection.dispatcher) {
-			try {
-				this.connection.dispatcher.end()
-			} catch (e) {
-				console.log(e)
-			}
+			this.connection.dispatcher.end("from this.stop")
 		}
 	}
-	leave() {
-		if (this.connection)
-			this.connection.channel.leave()
+	ended(connection:Discord.VoiceConnection){
+		this.nowPlaying="";
+		this.window.webContents.send("updateView")
+		clearTimeout(this.connectiontimeout)
+		this.connectiontimeout = setTimeout(() => this.leave(connection), 10000)
+	}
+	leave(connection: Discord.VoiceConnection) {
+		connection.channel.leave()
 		this.connection = undefined
 	}
-	connectAndPlayFile(path: string) {
-		this.connectandPlay(path, this.playfile)
+	connectandPlayFile(path: string, name:string) {
+		this.stop()
+		this.connect(path, this.playfile, name)
 	}
-	connectAndPlayYoutube(id: string) {
-		this.connectandPlay(id, this.playyoutube);
+	connectandPlayYoutube(path: string) {
+		this.stop()
+		this.connect(path, this.playyoutube)
 	}
-	connectandPlay(path: string, playfunction: (connection: Discord.VoiceConnection, path: string) => void) {
+	private connect(path: string, player: (connection: Discord.VoiceConnection, path: string, name?: string) => void, name?: string) {
 		if (this.isReady) {
-			this.stop()
-
 			let member = this.Client.guilds.find(g => g.id == this._id).members.find(m => m.user.id == this.user_id)
 			if (member != null && member.voiceChannel != null) {
 				let voiceChannel = member.voiceChannel
 				if (this.connection) {
 					if (this.connection.channel == voiceChannel) {
-						if (this.connectiontimeout)
-							clearTimeout(this.connectiontimeout)
-						playfunction(this.connection, path)
-					} else {
-						this.leave();
-						voiceChannel.join().then((connection: Discord.VoiceConnection) => {
-							this.connection = connection
-							playfunction(connection, path)
-						}).catch(err => console.log(err))
+						this.stop()
+						clearTimeout(this.connectiontimeout)
+						player(this.connection, path, name)
 					}
 				}
 				else {
-					voiceChannel.join().then((connection: Discord.VoiceConnection) => {
+					voiceChannel.join().then(connection => {
 						this.connection = connection
-						playfunction(connection, path)
-					}).catch(err => console.log(err))
+						player(connection, path, name)
+					}).catch(err => console.error(err))
 				}
 			} else {
-				console.log("No User found")
+				console.error("No User found")
 			}
 		}
 	}
-	playfile(connection: Discord.VoiceConnection, path: string) {
-		if (!(this instanceof Discordserver))
-			console.log(this)
-		const dispatcher = connection.playFile(path, { volume: 0.25 })
+	private playfile(connection: Discord.VoiceConnection, path: string, name?: string) {
+		if(name === undefined)
+			return
+		console.log(name)
+		this.nowPlaying=name
+		this.isPaused = false;
+		this.window.webContents.send("updateView")
+		const dispatcher = connection.playFile(path, { volume: this.volume })
+		this.pause = ()=>{this.isPaused = true;this.window.webContents.send("updateView");dispatcher.pause()}
+		this.play = ()=>{this.isPaused = false;this.window.webContents.send("updateView");dispatcher.resume()}
+		dispatcher.resume()
 		dispatcher.on("end", () => {
-			if (this && this.connectiontimeout)
-				clearTimeout(this.connectiontimeout)
-			this.connectiontimeout = setTimeout(() => this.leave(), 10000)
+			this.ended(connection)
+			clearTimeout(this.connectiontimeout)
+			this.connectiontimeout = setTimeout(() => this.leave(connection), 10000)
 		})
-		dispatcher.on("error", () => {
+		dispatcher.on("error", (e) => {
+			console.error(e)
 			this.stop()
 		})
 	}
-	playyoutube(connection: Discord.VoiceConnection, path: string) {
-		let stream = youtubeStream("https://www.youtube.com/watch?v=" + path)
-		const dispatcher = connection.playStream(stream, { volume: 0.25 })
+	private playyoutube(connection: Discord.VoiceConnection, path: string) {
+		//yt(path, { filter: "audioonly" }).on("data",d=>console.log(d));
+		this.isPaused = false;
+		yt.getInfo(path).then((i)=>{
+			this.nowPlaying=i.title
+			this.window.webContents.send("updateView")
+		});
+		const dispatcher = connection.playStream(yt(path, { filter: "audioonly" }), { volume: this.volume })
+		this.pause = ()=>{this.isPaused = true;this.window.webContents.send("updateView");dispatcher.pause()}
+		this.play = ()=>{this.isPaused = false;this.window.webContents.send("updateView");dispatcher.resume()}
+		dispatcher.resume()
 		dispatcher.on("end", () => {
-			if (this && this.connectiontimeout)
-				clearTimeout(this.connectiontimeout)
-			this.connectiontimeout = setTimeout(() => this.leave(), 10000)
+			this.ended(connection)
 		})
-		dispatcher.on("error", () => {
+		dispatcher.on("error", (e) => {
+			console.error(e)
 			this.stop()
 		})
 	}

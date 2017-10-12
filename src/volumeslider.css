@@ -1,19 +1,7 @@
-*{
-   user-select: none;
-   -o-user-select:none;
-   -moz-user-select: none;
-   -khtml-user-select: none;
-   -webkit-user-select: none;
-}
-body{
-  background: #f9f9f9;
-}
-
-
 #volume-slider{
   align-items: center;
   display    : flex;
-  margin     : 1em auto;
+  margin     : 0 auto;
   padding    : 10px 0;
   width      : 265px;
 }
@@ -55,7 +43,7 @@ body{
 
 
 .volume-indicator{
-  background-color: #6e33a5;
+  background-color: #f57c00;
   border-radius   : 50%;
   height          : 12px;
   left            : 0;
@@ -63,4 +51,15 @@ body{
   top             : -4px;
   transition      : visibility 100ms, opacity 100ms;
   width           : 12px;
+}
+.mdl-list__item{
+  padding: 0;
+  min-height: 32px;
+}
+.mdl-textfield {
+  padding: 0;
+}
+html,body{
+  margin:0;
+  padding:0;
 }
