@@ -1,5 +1,5 @@
 /node_modules
 /out
-/config
+/config/*
 yarn.lock
 package-lock.json
