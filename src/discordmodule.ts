@@ -98,7 +98,7 @@ export class Discordserver {
 	}
 	stop() {
 		if (this.connection && this.connection.dispatcher) {
-			this.connection.dispatcher.end("from this.stop")
+			this.connection.dispatcher.end()
 		}
 	}
 	ended(connection:Discord.VoiceConnection){
@@ -137,8 +137,6 @@ export class Discordserver {
 						player(connection, path, name)
 					}).catch(err => console.error(err))
 				}
-			} else {
-				console.error("No User found")
 			}
 		}
 	}

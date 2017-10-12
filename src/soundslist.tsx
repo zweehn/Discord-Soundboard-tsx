@@ -74,7 +74,7 @@ export default class Soundlist extends React.Component<{ playFile: (path: string
 							dense
 							data-index={i}
 							onClick={() => this.props.playFile(item.path, item.name)}
-							style={{ display: "inline-block", minWidth: "calc(50% - 64px)" }}>
+							style={{ display: "inline-block", minWidth: "calc(50% - 32px)" }}>
 							<ContextMenuTrigger
 								id="Sounds"
 								attributes={{ style: { display: "flex", alignItems: "center", fontFamily: "Roboto" } }}>
