@@ -1,6 +1,5 @@
 import * as React from 'react'
-import { ContextMenu, MenuItem, ContextMenuTrigger } from "react-contextmenu"
-import { MuiThemeProvider, createMuiTheme } from 'material-ui/styles'
+import { MuiThemeProvider, createMuiTheme, Theme } from 'material-ui/styles'
 import { Discordserver } from "./discordmodule"
 import { VolumeSlider } from "./VolumeSlider"
 import Button from 'material-ui/Button'
@@ -11,21 +10,15 @@ import AppBar from 'material-ui/AppBar';
 import Toolbar from 'material-ui/Toolbar';
 import Typography from 'material-ui/Typography';
 import TextField from 'material-ui/TextField'
-import PlayCircle from 'material-ui-icons/PlayCircleOutline'
-import List, { ListItem } from 'material-ui/List'
 import ServerSelection from "./serverselectmenu"
 import UserSelection from "./userselectmenu"
-import * as path from "path"
-import * as fs from "fs-extra"
+import Soundlist from "./soundslist"
 declare function openLink(path: string): void
 
 const remote = require('electron').remote
-const dialog = remote.dialog
 const server = remote.getCurrentWindow().server as Discordserver
 
-const soundfiles: { name: string, path: string }[] = []
-
-const theme = createMuiTheme({
+const theme:Theme = createMuiTheme({
 	palette: {
 		primary: indigo, // indigo and orange play nicely together.
 		secondary: {
@@ -38,66 +31,15 @@ const theme = createMuiTheme({
 	}
 });
 
-export class App extends React.Component<undefined, undefined> {
-	state = {
-		youtubeLink: ''
-	};
-
+export class App extends React.Component<undefined, {youtubeLink:string}> {
+	state={
+		youtubeLink:''
+	}
 	handleChange = name => event => {
 		this.setState({
 			[name]: event.target.value,
 		});
 	};
-	constructor() {
-		super()
-		this.saveSounds = this.saveSounds.bind(this)
-		fs.ensureFileSync("./config/savedfiles.json")
-		try {
-			fs.readJsonSync("./config/savedfiles.json").forEach((p: string) => {
-				if (fs.existsSync(p))
-					soundfiles.push({ name: path.basename(p).replace(/\..*$/,""), path: p })
-			})
-		} catch (e) {
-			fs.writeJSONSync("./config/savedfiles.json", {})
-		}
-	}
-	handleClick = (e: Event, data: any, target: HTMLElement) => {
-		const count = parseInt(target.getAttribute('data-count')!, 10)
-
-		if (data.action === 'Added') {
-			target.setAttribute('data-count', (count + 1).toString())
-		}
-
-		if (data.action === 'Removed' && count > 0) {
-			target.setAttribute('data-count', (count - 1).toString())
-		}
-	}
-	openFile() {
-		let that = this
-		dialog.showOpenDialog(function(fileNames: any) {
-
-			// fileNames is an array that contains all the selected 
-			if (fileNames === undefined) {
-				console.log("No file selected")
-			} else {
-				that.addFile(path.basename(fileNames[0]), fileNames[0])
-			}
-		})
-	}
-	addFile(name: string, path: string) {
-		soundfiles.push({ name: name.replace(/\..*$/,""), path: path })
-		this.forceUpdate()
-		this.saveSounds()
-	}
-	async saveSounds() {
-		fs.writeJSON("./config/savedfiles.json", soundfiles.map(t => t.path))
-	}
-	removeThis(e: any, s: any, x: any) {
-		console.log(x.parentElement.getAttribute("data-index"))
-		soundfiles.splice(x.parentElement.getAttribute("data-index"), 1)
-		this.saveSounds()
-		this.forceUpdate()
-	}
 	onchangevolume(volume: number) {
 		server.volume = volume / 100
 	}
@@ -106,51 +48,36 @@ export class App extends React.Component<undefined, undefined> {
 			<MuiThemeProvider theme={theme}>
 				<div style={{backgroundColor:theme.palette.background.paper}}>
 					<AppBar position="static">
-						<Toolbar>
+						<Toolbar style={{justifyContent:"space-between"}}>
 							<Typography type="title" color="inherit">
 								Discord Soundboard
           					</Typography>
+          					<div key={server.nowPlaying} style={{display:server.nowPlaying!==""?"flex":"none"}}>
+								<Typography type="caption" color="inherit">
+									Now Playing: {server.nowPlaying}
+								</Typography>          					
+	          					<Button style={{display:server.isPaused!==true?"inline-flex":"none"}} onClick={()=>server.pause()} color="contrast">Pause</Button>
+	          					<Button style={{display:server.isPaused!==false?"inline-flex":"none"}} onClick={()=>server.play()} color="contrast">Play</Button>
+	          					<Button onClick={() => server.stop()} color="contrast">Stop</Button>
+          					</div>
 						</Toolbar>
 					</AppBar>
 					<ServerSelection onchange={(newServer) => server.server = newServer} options={server.servers} />
 					<UserSelection onchange={(newPlayer) => server.user = newPlayer} options={server.users} />
 					<VolumeSlider initialvolume={server.volume * 100} updateVolume={this.onchangevolume}></VolumeSlider>
-					<div style={{ overflowX: "auto",height:"calc(100vh - 350px)" }}>
-						<List>
-							{soundfiles.map((item, i) => (
-								<ListItem
-									key={i}
-									button
-									dense
-									data-index={i}
-									onClick={() => server.connectandPlayFile(item.path)}
-									style={{display:"inline-block"}}>
-									<ContextMenuTrigger
-										id="Sounds"
-										holdToDisplay={1000}
-										attributes={{ style: { display: "flex", alignItems: "center", fontFamily: "Roboto" } }}>
-										<PlayCircle color={theme.palette.secondary.A700.toString()} />
-										<span>{item.name}</span>
-									</ContextMenuTrigger>
-								</ListItem>
-							))}
-							<ContextMenu id="Sounds">
-								<MenuItem onClick={(a, b, c) => this.removeThis(a, b, c)} data={{ action: 'Removed' }}>Remove this Sound</MenuItem>
-							</ContextMenu>
-						</List>
-					</div>
+					<Soundlist playFile={server.connectandPlayFile} theme={theme} />
 					<div style={{ position: "fixed", bottom: 0, background: theme.palette.background.paper, width: "100%" }}>
 						<TextField
 							id="youtubeLink"
 							label="Video Link"
 							value={this.state.youtubeLink}
+							color={"accent"}
 							onChange={this.handleChange('youtubeLink')}
 							margin="normal"
 						/>
-						<Button raised color={"primary"} onClick={() => server.connectandPlayYoutube(this.state.youtubeLink)}>Play</Button>
+						<Button raised color={"accent"} onClick={() => server.connectandPlayYoutube(this.state.youtubeLink)}>Play</Button>
 						<br />
-						<Button onClick={() => this.openFile()}>Add Sound</Button>
-						<Button onClick={() => server.stop()}>Stop</Button>
+						
 						<br />
 						<Button onClick={() => openLink("https://discordapp.com/api/oauth2/authorize?client_id=353873627374157836&scope=bot")}>Add this Bot to your Server!</Button>
 					</div>

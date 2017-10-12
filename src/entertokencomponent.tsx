@@ -21,7 +21,7 @@ export class Entertokencomponent extends React.Component<undefined, undefined> {
 		return (
 			<div>
 				<input type="text" value={config.token} onChange={this.inputchange}/>
-				<button onClick={this.save}>Save Token</button>
+				<button onClick={this.save}>Save</button>
 			</div>
 		);
 	}

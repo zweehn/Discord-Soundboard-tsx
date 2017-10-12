@@ -199,8 +199,8 @@ export class VolumeSlider extends React.Component<{initialvolume:number,updateVo
 						</mask>
 
 						<linearGradient id="grad-1" x1="0" x2="1" y1="0" y2="0">
-							<stop offset="20%" stopColor="#9a88aa" />
-							<stop offset="100%" stopColor="#6e33a5" />
+							<stop offset="20%" stopColor="#f57c00" />
+							<stop offset="100%" stopColor="#f57c00" />
 						</linearGradient>
 					</defs>
 
