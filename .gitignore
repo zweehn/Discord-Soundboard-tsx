@@ -2,3 +2,4 @@
 /out
 /config
 yarn.lock
+package-lock.json
