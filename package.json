@@ -50,9 +50,11 @@
     "@types/fs-extra": "^4.0.1",
     "@types/react": "^16.0.10",
     "@types/react-dom": "^16.0.1",
+    "bufferutil": "^3.0.3",
     "discord.js": "^11.1.0",
     "electron-compile": "^6.4.1",
     "electron-devtools-installer": "^2.0.1",
+    "erlpack": "hammerandchisel/erlpack",
     "fs-extra": "^4.0.1",
     "material-ui": "^1.0.0-beta.16",
     "material-ui-icons": "^1.0.0-beta.15",
@@ -63,6 +65,7 @@
     "react-dom": "^16.0.0",
     "react-hot-loader": "^3.0.0-beta.6",
     "tslib": "^1.4.0",
+    "uws": "^8.14.1",
     "ytdl-core": "^0.18.0"
   },
   "devDependencies": {

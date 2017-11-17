@@ -9,9 +9,9 @@ export class Discordserver {
 	public user: Discord.GuildMember
 	public servers: Discord.Guild[] = []
 	public users: Discord.GuildMember[] = []
+	public nowPlaying:string
 	private connection?: Discord.VoiceConnection
 	private connectiontimeout: NodeJS.Timer
-	public nowPlaying:string
 	public pause:()=>void=()=>{};
 	public play:()=>void=()=>{};
 	public isPaused: boolean = true;
@@ -24,7 +24,7 @@ export class Discordserver {
 		this.nowPlaying = ""
 		this.connectandPlayYoutube = this.connectandPlayYoutube.bind(this)
 		this.connectandPlayFile = this.connectandPlayFile.bind(this)
-		that.Client.on("ready", () => {
+		this.Client.on("ready", () => {
 			console.info("Ready")
 			that.isReady = true
 			that.servers = that.Client.guilds.array()
@@ -36,14 +36,22 @@ export class Discordserver {
 			that.window.webContents.send("updateView")
 		})
 
-		that.Client.on("voiceStateUpdate", () => {
+		this.Client.on("guildCreate",()=>{
+			that.servers=that.Client.guilds.array();			
+		})
+
+		this.Client.on("guildDelete",()=>{
+			that.servers=that.Client.guilds.array();			
+		})
+
+		this.Client.on("voiceStateUpdate", () => {
 			that.users = that.Client.guilds.find(g => g.id == that._id).members.filter(m => !m.user.bot).filter(m => m.voiceChannelID != null).array()
 			if (that.users[0] != null && that.user == null)
 				that.user = that.users[0]
 			that.window.webContents.send("updateView")
 		})
 
-		that.Client.on("message",message=>{
+		this.Client.on("message",message=>{
 			let messages = message.content.toLowerCase().split(" ");
 			if(messages[0].toLowerCase() != "botti")
 				return;
@@ -86,7 +94,6 @@ export class Discordserver {
 		if (this.connection && this.connection.dispatcher) {
 			this.connection.dispatcher.setVolume(this._volume);
 		}
-		console.log(this._volume);
 	}
 	async login() {
 		let token = (await fs.readJson("./config/config.json")).token as string
